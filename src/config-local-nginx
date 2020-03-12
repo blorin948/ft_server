@@ -1,0 +1,44 @@
+server {
+    listen 80;
+    server_name _;
+    return 301 https://$host$request_uri;
+}
+
+server {
+	listen         443 ssl default_server;
+	listen         [::]:443 ssl default_server ;
+	root /var/www/html;
+	server_name _;
+	ssl_certificate     /root/certs/website/website.crt;
+	ssl_certificate_key /root/certs/website/website.key;
+   	ssl_ciphers         EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;
+    ssl_protocols       TLSv1.1 TLSv1.2;
+	index index.php index.html index.htm;
+	location / {
+		try_files $uri $uri/ =404;
+	}
+	location ~ \.php$ {
+		include snippets/fastcgi-php.conf;
+		fastcgi_pass unix:/run/php/php7.3-fpm.sock;
+	}
+	location / {
+    autoindex on;
+	}
+	location /phpmyadmin {
+		root /usr/share/;
+	    	location ~ ^/phpmyadmin/(.+\.php)$ {
+	    	      try_files $uri =404;
+	    	      root /usr/share/;
+	    	      fastcgi_pass unix:/var/run/php/php7.3-fpm.sock;
+    		      fastcgi_index index.php;
+    		      fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    		      include /etc/nginx/fastcgi_params;
+		}
+     		location ~* ^/phpmyadmin/(.+\.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt))$ {
+			root /usr/share/;
+     		}
+	}
+	location /phpMyAdmin {
+	     rewrite ^/* /phpmyadmin last;
+	}
+}
